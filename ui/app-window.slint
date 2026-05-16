@@ -1,0 +1,196 @@
+// Copyright (C) 2026 nlq. This software is distributed under the GNU GPL v3 license.
+
+import { Button, ComboBox, CheckBox } from "std-widgets.slint";
+
+export component MainWindow inherits Window {
+
+title: "DNGFilm";
+
+//Default values for widgets
+    out property <string> compression: "lossless";
+    out property <string> crop: "best";
+    out property <bool> embeded: false;
+    out property <bool> override_1: false;
+    out property <bool> recursive: false;
+    in-out property <string> input_path: "Not selected.";
+    in-out property <string> output_path: "Not selected.";
+    in-out property <bool> convert_true: false;
+
+
+//Callbacks for changes on values on widgets
+
+    callback input_files();
+    callback output_folder();
+    callback convert_pressed();
+
+
+
+    GridLayout {
+
+        padding: 20px;
+        spacing: 20px;
+
+        Row {
+
+        //Input Files button
+            Button {
+                col: 0;
+                width: 150px;
+                height: 25px;
+                text: "Input file(s)";
+                clicked => {
+                debug("open dialog");
+                root.input_files();
+                }
+            }
+
+         //Output Folder button
+
+            Button {
+                col: 1;
+                width: 150px;
+                height: 25px;
+                text: "Output folder";
+                clicked => {
+                debug("open dialog");
+                root.output_folder();
+                }
+
+            }
+        }
+
+        Row {
+
+        Text {col: 0; text: root.input_path;}
+
+        Text {col: 1; text: root.output_path;}
+
+        }
+
+
+        //Just text
+
+        Row {
+            Text {
+            col: 0;
+            font-weight: 800;
+            text: "Options";
+            }
+        }
+
+        //Compression options
+
+        Row {
+
+            Text {
+            col: 0;
+            text: "Compression";
+            }
+
+
+            ComboBox {
+
+                col: 1;
+                width: 150px;
+                height: 25px;
+                model: ["lossless", "uncompressed"];
+                current-value: root.compression;
+                selected(value) => {
+                    debug("Selected value: ", value);
+                    compression = value;
+                    //root.compression_changed(value);
+
+                }
+            }
+        }
+
+        //Crop Options
+
+        Row {
+
+            Text {
+                col: 0;
+                text: "Crop mode";
+            }
+
+            ComboBox {
+                col: 1;
+                width: 150px;
+                height: 25px;
+                model: ["best", "active area", "none"];
+                current-value: root.crop;
+                selected(value) => {
+                    debug("Selected value: ", value);
+                    crop = value;
+                    //root.crop_changed(value);
+                }
+            }
+        }
+
+        //Embedbed options
+
+        Row {
+
+            CheckBox {
+                col: 0;
+                text: "Embed RAW";
+                checked: embeded;
+                toggled() => {
+                    debug("Selected value: ", self.checked);
+                    embeded = self.checked;
+                    //root.embeded_changed(self.checked);
+                }
+            }
+        }
+
+        //Override options
+
+        Row {
+
+            CheckBox {
+                col: 0;
+                text: "Override";
+                checked: override_1;
+                toggled() => {
+                    debug("Selected value: ", self.checked);
+                    override_1 = self.checked;
+                    //root.override_changed(self.checked);
+                }
+
+            }
+        }
+
+        //Recursive options
+
+        Row {
+
+            CheckBox {
+                col: 0;
+                text: "Recursive";
+                checked: recursive;
+                toggled() => {
+                    debug("Selected value: ", self.checked);
+                    recursive = self.checked;
+                    //root.override_changed(self.checked);
+                }
+            }
+        }
+
+        //Process button
+
+        Row {
+            Button {
+                col: 1;
+                width: 150px;
+                height: 25px;
+                enabled: convert_true;
+                text: "convert";
+                clicked => {
+                root.convert_pressed();
+                }
+            }
+        }
+    }
+}
+
+
