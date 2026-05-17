@@ -1,5 +1,5 @@
 # DGNFilm
-Little app to lossless compress raw image files (arw, cr3, nef, etc.) and convert DNG. Useful for users of cameras without lossless compression (like the Sony a7r II and a7r III or Leica SL, SL 2), or for those who just want to keep their images in DNG format.
+Little app to lossless compress raw image files (arw, cr3, nef, etc.) and convert them to DNG. Useful for users of cameras without lossless compression (like the Sony a7r II and a7r III or Leica SL, SL 2), or for those who just want to keep their images in DNG format.
 
 <img width="382" height="437" alt="screenshot" src="https://github.com/user-attachments/assets/8d63d281-75af-45a3-9b65-85f9f3b59073" />
 
