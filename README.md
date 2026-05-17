@@ -3,7 +3,7 @@ Little app to lossless compress raw image files (arw, cr3, nef, etc.) and conver
 
 <img width="382" height="437" alt="screenshot" src="https://github.com/user-attachments/assets/8d63d281-75af-45a3-9b65-85f9f3b59073" />
 
-It works on linux and Mac Os. If you dowload a release [https://github.com/dnglab/DNGFilm/releases] just double click on the file to open the app. 
+It works on Linux and Mac Os. If you dowload a release [https://github.com/dnglab/DNGFilm/releases] just double click on the file to open the app. 
 
 On Mac OS 
 
