@@ -9,7 +9,7 @@ On Mac OS
 
 You may probably nedd to give permissions settings, privacy and security. After that you can copy the app file to your applications folder.
 
-On linux 
+On Linux 
 
 Copy the .desktop file to ~/.local/share/applications/ or /usr/share/applications/ and the release binary to ~/.local/bin or /usr/bin 
 
