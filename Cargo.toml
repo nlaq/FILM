@@ -1,0 +1,26 @@
+[package]
+name = "FILM"
+version = "0.1.0"
+edition = "2021"
+build = "build.rs"
+
+[dependencies]
+# Cambiado para la versión 1.16+: Solo necesitamos "backend-winit"
+slint = { version = "1.16", features = ["backend-winit"] }
+rfd = "0.14"
+memmap2 = "0.9.5" 
+kamadak-exif = "0.5"
+image = { version = "0.25", default-features = false, features = ["jpeg"] }
+fast_image_resize = "5.1"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0" 
+zip = "2.1"
+regex = "1"
+tokio = { version = "1", features = ["full"] }
+dirs = "5.0"
+dnglab = { package = "dnglab_lib", path = "./dnglab-lib" }
+rawler = { path = "./rawler" }
+
+
+[build-dependencies]
+slint-build = "1.16"

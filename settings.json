@@ -1,0 +1,11 @@
+{
+  "artist": "",
+  "compression": "compressed",
+  "crop": "best",
+  "dng_preview": true,
+  "dng_thumbnail": true,
+  "embed_raw": false,
+  "override_files": false,
+  "image_index": "0",
+  "ljpeg92_predictor": 1
+}
