@@ -1,0 +1,190 @@
+import { Button, ComboBox, CheckBox, LineEdit } from "std-widgets.slint";
+
+export global DngSettings {
+    // All defaults are intentionally neutral — Rust populates these
+    // from SettingsManager on every window open, so Slint defaults are never seen.
+    in-out property <string> artist:            "";
+    in-out property <string> compression:       "";
+    in-out property <string> crop:              "";
+    in-out property <bool>   dng_preview:       false;
+    in-out property <bool>   dng_thumbnail:     false;
+    in-out property <bool>   embed_raw:         false;
+    in-out property <bool>   override_files:    false;
+    in-out property <string> image_index:       "";
+    in-out property <int>    ljpeg92_predictor: 0;   // 0-based index into ["1".."7"]
+}
+
+export component SettingsWindow inherits Window {
+    title: "DNG Conversion Settings";
+    width: 500px;
+    height: 430px;
+    always-on-top: true;
+    background: #ffffff;
+
+    callback save-clicked();
+    callback cancel-clicked();
+
+    VerticalLayout {
+        padding: 24px;
+        spacing: 18px;
+
+        // Artist
+        HorizontalLayout {
+            spacing: 12px;
+            alignment: start;
+            Text {
+                text: "Artist tag";
+                vertical-alignment: TextVerticalAlignment.center;
+                font-size: 13px;
+                width: 160px;
+            }
+            LineEdit {
+                width: 220px;
+                height: 28px;
+                text <=> DngSettings.artist;
+                placeholder-text: "e.g. John Doe";
+            }
+        }
+
+        // Compression
+        HorizontalLayout {
+            spacing: 12px;
+            alignment: start;
+            Text {
+                text: "Compression";
+                vertical-alignment: TextVerticalAlignment.center;
+                font-size: 13px;
+                width: 160px;
+            }
+            ComboBox {
+                width: 160px;
+                height: 28px;
+                model: ["lossless", "uncompressed"];
+                current-value <=> DngSettings.compression;
+            }
+        }
+
+        // Crop
+        HorizontalLayout {
+            spacing: 12px;
+            alignment: start;
+            Text {
+                text: "Default crop";
+                vertical-alignment: TextVerticalAlignment.center;
+                font-size: 13px;
+                width: 160px;
+            }
+            ComboBox {
+                width: 160px;
+                height: 28px;
+                model: ["best", "activearea", "none"];
+                current-value <=> DngSettings.crop;
+            }
+        }
+
+        // LJPEG-92 predictor
+        HorizontalLayout {
+            spacing: 12px;
+            alignment: start;
+            Text {
+                text: "LJPEG-92 predictor";
+                vertical-alignment: TextVerticalAlignment.center;
+                font-size: 13px;
+                width: 160px;
+            }
+            ComboBox {
+                width: 80px;
+                height: 28px;
+                model: ["1", "2", "3", "4", "5", "6", "7"];
+                current-index <=> DngSettings.ljpeg92_predictor;
+            }
+            Text {
+                text: "If not shure, leave it on 1 (default)";
+                vertical-alignment: TextVerticalAlignment.center;
+                font-size: 11px;
+                color: #888888;
+            }
+        }
+
+        // Image index
+        HorizontalLayout {
+            spacing: 12px;
+            alignment: start;
+            Text {
+                text: "Image index";
+                vertical-alignment: TextVerticalAlignment.center;
+                font-size: 13px;
+                width: 160px;
+            }
+            LineEdit {
+                width: 80px;
+                height: 28px;
+                text <=> DngSettings.image_index;
+                placeholder-text: "0";
+            }
+            Text {
+                text: "(number or \"all\")";
+                vertical-alignment: TextVerticalAlignment.center;
+                font-size: 11px;
+                color: #888888;
+            }
+            
+        }
+
+        Text {
+                text: "Image index is only for multi-frame containers. If not shure, leave it on default";
+                vertical-alignment: TextVerticalAlignment.center;
+                font-size: 11px;
+                color: #888888;
+            }
+
+
+
+        // Boolean flags
+        GridLayout {
+            spacing: 10px;
+            Row {
+                CheckBox {
+                    text: "Include preview image";
+                    checked <=> DngSettings.dng_preview;
+                    width: 200px;
+                }
+                CheckBox {
+                    text: "Include thumbnail image";
+                    checked <=> DngSettings.dng_thumbnail;
+                    width: 200px;
+                }
+            }
+            Row {
+                CheckBox {
+                    text: "Embed original RAW";
+                    checked <=> DngSettings.embed_raw;
+                    width: 200px;
+                }
+                CheckBox {
+                    text: "Override existing files";
+                    checked <=> DngSettings.override_files;
+                    width: 200px;
+                }
+            }
+        }
+
+        // Buttons
+        HorizontalLayout {
+            spacing: 10px;
+            alignment: end;
+            Button {
+                text: "Cancel";
+                width: 90px;
+                height: 28px;
+                clicked => { root.cancel-clicked(); }
+            }
+            Button {
+                text: "Save";
+                width: 90px;
+                height: 28px;
+                clicked => { root.save-clicked(); }
+            }
+        }
+    }
+}

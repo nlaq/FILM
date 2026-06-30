@@ -1,0 +1,402 @@
+
+import { Button, ComboBox, ListView, ScrollView, CheckBox } from "std-widgets.slint";
+import { CustomRadioButton } from "./Components.slint";
+import { NewLensWindow } from "./NewLens.slint";
+import { RemoveWindow } from "./Remove.slint";
+import { SettingsWindow, DngSettings } from "./Settings.slint";
+
+export global AppData {
+    in property <[string]> lens-list: [];
+    in property <[string]> aperture-list: [];
+    in property <image> preview-image;
+    in property <string> image-info-text: "Seleccione una imagen";
+
+    in property <bool> file_selected_write_button_enabled: false;
+    in property <bool> lens_selected_write_button_enabled: false;
+    in property <bool> aperture_selected_write_button_enabled: false;
+
+    in-out property <[string]> brand_list;
+    in-out property <[string]> focal_list;
+    
+    /////EXIF DATA
+    in-out property <string> meta_camera: "";
+    in-out property <string> meta_lens: "";
+    in-out property <string> meta_aperture: "";
+    in-out property <string> meta_iso: "";
+    in-out property <string> meta_size: "";
+}
+
+export struct ImageItem {
+    path: string,
+    preview: image,
+}
+
+export struct Thumbnail {
+    path_thumbnail: string,
+    path_raw: string,
+    preview: image,
+    is_portrait: bool,
+    is_selected: bool
+}
+
+export { NewLensWindow, RemoveWindow, SettingsWindow, DngSettings }
+
+export component AppWindow inherits Window {
+    title: "FILM";
+    min-width: 1100px;
+    min-height: 700px;
+    background: #fff;
+
+    in-out property <[Thumbnail]> file_list;
+    in-out property <[ImageItem]> image_list: [];
+    in-out property <image> selected_preview;
+    in-out property <string> persistent_output_folder: "";
+
+    // "same" = output to the same folder as input; "pick" = user picks a folder via dialog
+    in-out property <string> selected_output_folder: "pick";
+
+    // Whether to convert every file in the loaded folder regardless of selection
+    in-out property <bool> convert_all: false;
+
+    // Set by Rust after a folder is picked: last 25 chars of the path, prefixed with "…"
+    // Empty until the user picks a folder for the first time.
+    in-out property <string> picked_folder_label: "";
+
+    // Convert button is enabled when:
+    //   convert_all ON  -> a directory has been loaded (file_list non-empty)
+    //   convert_all OFF -> at least one thumbnail is selected
+    pure function convert_enabled() -> bool {
+        if (root.convert_all) {
+            return root.file_list.length > 0;
+        } else {
+            return AppData.file-selected-write-button-enabled;
+        }
+    }
+    
+    ///////Disable and enable convert button on processing
+    in-out property <bool> is_converting: false;
+
+    // 2. Update the helper function to respect the conversion state
+    pure function convert_button_enabled() -> bool {
+        if (root.is_converting) {
+            return false; 
+        }
+        if (root.convert_all) {
+            return root.file_list.length > 0;
+        } else {
+            return AppData.file-selected-write-button-enabled;
+        }
+    }
+    
+    
+    
+    
+
+    // Callbacks
+    callback select-directory-clicked();
+    callback file-selected(int);
+    callback lens-changed(string);
+    callback aperture-changed(string);
+    callback write-exif-clicked();
+    callback convert-clicked();
+    callback thumbnail_clicked(string);
+    callback thumbnail-ctrl-clicked(int);
+
+    callback remove-lens-clicked();
+    callback new-aperture-clicked();
+    callback settings-clicked();
+    callback open-new-lens-clicked();
+    callback open_remove_window_clicked();
+
+    MenuBar {
+        Menu {
+            title: "File";
+            MenuItem {
+                title: "Write Exif";
+                activated => { root.write-exif-clicked(); }
+            }
+            MenuItem {
+                title: "Convert to DNG";
+                activated => { root.convert-clicked(); }
+            }
+        }
+        Menu {
+            title: "Edit";
+            MenuItem {
+                title: "New Lens";
+                activated => { root.open-new-lens-clicked(); }
+            }
+            MenuItem {
+                title: "Remove lens";
+                activated => { root.open_remove_window_clicked(); }
+            }
+            MenuItem {
+                title: "DNG Settings";
+                activated => { root.settings-clicked(); }
+            }
+        }
+    }
+
+    VerticalLayout {
+        padding: 20px;
+        spacing: 20px;
+
+        HorizontalLayout {
+
+            // --- Left column: directory, thumbnails, convert controls ---
+            VerticalLayout {
+                spacing: 20px;
+
+                Button {
+                    text: "Directory";
+                    width: 120px;
+                    height: 32px;
+                    clicked => { root.select-directory-clicked(); }
+                }
+
+                Rectangle {
+                    width: 130px;
+                    vertical-stretch: 1;
+                    border-radius: 4px;
+                    border-width: 1px;
+                    border-color: #fff;
+
+                    ScrollView {
+                        vertical-stretch: 1;
+                        width: 140px;
+
+                        VerticalLayout {
+                            spacing: 1px; // Clean padding between items
+                            padding: 1px;
+        
+                        for thumb[index] in root.file-list: Rectangle {
+                            background: transparent;
+                            height: thumb.is-portrait ? 180px : 90px; 
+                            width: 120px;
+
+                            // 1. The TouchArea must be the structural wrapper for the item
+                            TouchArea {
+                                width: 100%;
+                                height: 100%;
+
+                                pointer-event(event) => {
+                                    if (event.kind == PointerEventKind.up) {
+                                        if (event.modifiers.control) {
+                                            root.thumbnail-ctrl-clicked(index);
+                                        } else {
+                                            root.file-selected(index);
+                                        }
+                                    }
+                                }
+
+                            // 2. The visual item elements sit inside the TouchArea safely
+                                Rectangle {
+                                    width: 100%;
+                                    height: 100%;
+                                    background: thumb.is-selected ? #cce0ff80 : transparent;
+                                    border-width: thumb.is-selected ? 2px : 0px;
+                                    border-color: #4a90d9;
+                                    border-radius: 3px;
+
+                                    Image {
+                                        width: parent.width - 6px;
+                                        height: parent.height - 6px;
+                                        x: 3px;
+                                        y: 3px;
+                                        image-fit: contain;
+                                        source: thumb.preview;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                }
+
+                // Convert controls
+                CheckBox {
+                    text: "Convert all files";
+                    checked <=> root.convert_all;
+                }
+
+                // Radio: always triggers the folder picker dialog on Convert.
+                CustomRadioButton {
+                    text: "Pick output folder";
+                    checked: root.selected_output_folder == "pick";
+                    clicked => { root.selected_output_folder = "pick"; }
+                }
+                
+                // Radio buttons only set the mode; Convert button is the sole trigger.
+                // Radio: shows "Same as input folder" until a folder is picked,
+                // then its label becomes the last 25 chars of that path.
+                CustomRadioButton {
+                    text: root.picked_folder_label == "" ? "Same as input" : root.picked_folder_label;
+                    checked: root.selected_output_folder == "same";
+                    clicked => { root.selected_output_folder = "same"; }
+                }
+
+                Button {
+                    text: root.is_converting ? "Processing..." : "Convert to DNG";
+                    enabled: root.convert_button_enabled();
+                    max-width: 110px;
+                    height: 28px;
+                    clicked => { root.convert-clicked(); }
+                }
+            }
+
+            // --- Right column: preview + EXIF form ---
+            VerticalLayout {
+                padding-left: 10px;
+                spacing: 8px;
+                vertical-stretch: 1;
+                horizontal-stretch: 1;
+                preferred-width: 650px;
+                preferred-height: 550px;
+                
+                
+                                
+                Rectangle {
+                    border-radius: 8px;
+                    border-width: 1px;
+                    border-color: #cccccc;
+                    background: #f5f5f5;
+                    
+                                        
+
+
+                    VerticalLayout {
+                        padding: 10px;
+                        spacing: 10px;
+
+                        if AppData.image-info-text == "Select an image.": Text {
+                            text: AppData.image-info-text;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                        }
+
+                        Image {
+                            source: AppData.preview-image;
+                            image-fit: contain;
+                        }
+                    }
+                    
+                    
+                    
+                    Rectangle {    
+                    
+                    background: rgba(245, 245, 245, 0.7);
+                    height: 5%;
+                    width: 99%;
+                    border-radius: 8px;
+                    border-width: 0px;
+                    x: 1px;
+                    y: 1px;
+                    
+                    
+              
+                                    
+                    if AppData.meta-camera != "" : HorizontalLayout {
+                    
+                    spacing: 25px;
+                    alignment: center;
+                    padding: 5px;
+                                        
+                        VerticalLayout {
+                            alignment: start;
+                        Text { text: "Camera:"; font-size: 11px; color: #555; }
+                        Text { text: AppData.meta-camera; font-size: 11px; color: #007AFF; }
+                        }
+                        VerticalLayout {
+                            alignment: start;
+                        Text { text: "Lens:"; font-size: 11px; color: #555; }
+                        Text { text: AppData.meta-lens; font-size: 11px; color: #007AFF; }
+                        }
+                        VerticalLayout {
+                            alignment: start;
+                        Text { text: "Aperture:"; font-size: 11px; color: #555; }
+                        Text { text: AppData.meta-aperture; font-size: 11px; color: #007AFF; }
+                        }
+                        VerticalLayout {
+                            alignment: start;
+                        Text { text: "ISO:"; font-size: 11px; color: #555; }
+                        Text { text: AppData.meta-iso; font-size: 11px; color: #007AFF; }
+                        }
+                        VerticalLayout {
+                            alignment: start;
+                        Text { text: "Resolution:"; font-size: 11px; color: #555; }
+                        Text { text: AppData.meta-size; font-size: 11px; color: #007AFF; }
+                        }
+                    }
+                      
+                }
+                    
+                    
+                    
+                    
+                    
+                }
+
+                // EXIF form
+                HorizontalLayout {
+                    spacing: 15px;
+                    alignment: center;
+                    vertical-stretch: 1;
+
+                    HorizontalLayout {
+                        spacing: 8px;
+                        Text {
+                            text: "Lens:";
+                            vertical-alignment: TextVerticalAlignment.center;
+                            font-size: 13px;
+                        }
+                        ComboBox {
+                            width: 280px;
+                            height: 28px;
+                            property <bool> interacted: false;
+                            model: self.interacted ? AppData.lens-list : ["Select..."];
+                            selected(val) => {
+                                self.interacted = true;
+                                root.lens-changed(val);
+                            }
+                            changed has-focus => {
+                                if (self.has-focus) { self.interacted = true; }
+                            }
+                        }
+                    }
+
+                    HorizontalLayout {
+                        spacing: 8px;
+                        Text {
+                            text: "Aperture: f/";
+                            vertical-alignment: TextVerticalAlignment.center;
+                            font-size: 13px;
+                            color: AppData.lens-selected-write-button-enabled ? #000000 : #888888;
+                        }
+                        ComboBox {
+                            width: 100px;
+                            height: 28px;
+                            enabled: AppData.lens-selected-write-button-enabled;
+                            model: AppData.aperture-list.length > 0 ? AppData.aperture-list : ["Select..."];
+                            selected(val) => { root.aperture-changed(val); }
+                        }
+                    }
+
+                    Button {
+                        text: "Write Exif";
+                        enabled: AppData.file-selected-write-button-enabled
+                                 && AppData.lens-selected-write-button-enabled
+                                 && AppData.aperture-selected-write-button-enabled;
+                        max-width: 110px;
+                        height: 28px;
+                        clicked => { root.write-exif-clicked(); }
+                    }
+                }
+            }
+            
+            
+
+            
+            
+        }
+    }
+}

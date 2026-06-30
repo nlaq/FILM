@@ -1,0 +1,274 @@
+import { Button, ComboBox, LineEdit } from "std-widgets.slint";
+
+export component NewLensWindow inherits Window {
+    in property <[string]> brand-list;
+    in property <[string]> model-list;
+    in property <[string]> focal-list;
+    in property <[string]> max-aperture-list; // Explicitly for Max aperture values
+    in property <[string]> min-aperture-list; // Explicitly for Min aperture values
+
+    // Cascade flags — each one gates the next row
+    in property <bool> brand_selected:         false;
+    in property <bool> model_selected:         false;
+    in property <bool> focal_selected:         false;
+    in property <bool> max_aperture_selected:  false;
+    in property <bool> min_aperture_selected:  false;
+
+    in-out property <string> add_brand_input;
+    in-out property <string> add_model_input;
+    in-out property <string> add_focal_input;
+    in-out property <string> add_max_aperture_input;
+    in-out property <string> add_min_aperture_input;
+
+    title: "New Lens";
+    width: 560px;
+    height: 390px; // Expanded slightly to cleanly accommodate the dual aperture selectors
+    always-on-top: true;
+
+    callback brand-changed(string);
+    callback model-changed(string);
+    callback focal-changed(string);
+    callback max-aperture-changed(string);
+    callback min-aperture-changed(string);
+    callback save-clicked();
+    callback cancel-clicked();
+
+    callback add-brand-clicked();
+    callback add-model-clicked();
+    callback add-focal-clicked();
+    callback add-max-aperture-clicked();
+    callback add-min-aperture-clicked();
+
+    VerticalLayout {
+        padding: 20px;
+        spacing: 15px;
+        alignment: start;
+
+        Text {       
+            text: "Select a lens brand, model, focal distance, max aperture, and min aperture.";
+            wrap: word-wrap;
+            font-size: 13px;
+        }
+        Text {
+            text: "If it does not exist you can add one on the text input to the right and pressing +";
+            wrap: word-wrap;
+            font-size: 13px;
+        }
+        Text {
+            text: "It will instantly become available in the combobox.";
+            wrap: word-wrap;
+            font-size: 13px;
+        }    
+        Text {
+            text: "Press Save to add a new lens to the database.";
+            wrap: word-wrap;
+            font-size: 13px;
+        }    
+
+        GridLayout {
+            spacing: 10px;
+
+            // ── Brand row (always enabled) ──────────────────────────────────
+            Row {
+                Text { text: "Brand"; vertical-alignment: TextVerticalAlignment.center; font-size: 13px; }
+                ComboBox {
+                    width: 200px; height: 28px;
+                    property <bool> interacted: false;
+                    model: self.interacted ? root.brand-list : ["Select..."];
+                    selected(val) => { root.brand-changed(val); }
+                    changed has-focus => { if (self.has-focus) { self.interacted = true; } }
+                }
+                Text { text: "or"; vertical-alignment: TextVerticalAlignment.center; font-size: 13px; }
+                LineEdit {
+                    width: 150px; height: 28px;
+                    text <=> root.add_brand_input;
+                    placeholder-text: "add a brand...";
+                }
+                Button {
+                    text: "+"; width: 28px; height: 28px;
+                    enabled: root.add_brand_input != "";
+                    clicked => { root.add-brand-clicked(); }
+                }
+            }
+
+            // ── Model row (enabled only after brand is chosen) ───────────────
+            Row {
+                Text {
+                    text: "Model";
+                    vertical-alignment: TextVerticalAlignment.center;
+                    font-size: 13px;
+                    opacity: root.brand_selected ? 1.0 : 0.35;
+                }
+                ComboBox {
+                    width: 200px; height: 28px;
+                    enabled: root.brand_selected;
+                    property <bool> interacted: false;
+                    model: self.interacted ? root.model-list : ["Select..."];
+                    selected(val) => { root.model-changed(val); }
+                    changed has-focus => { if (self.has-focus) { self.interacted = true; } }
+                }
+                Text {
+                    text: "or";
+                    vertical-alignment: TextVerticalAlignment.center;
+                    font-size: 13px;
+                    opacity: root.brand_selected ? 1.0 : 0.35;
+                }
+                LineEdit {
+                    width: 150px; height: 28px;
+                    enabled: root.brand_selected;
+                    text <=> root.add_model_input;
+                    placeholder-text: "add a model...";
+                }
+                Button {
+                    text: "+"; width: 28px; height: 28px;
+                    enabled: root.brand_selected && root.add_model_input != "";
+                    clicked => { root.add-model-clicked(); }
+                }
+            }
+
+            // ── Focal length row (enabled only after model is chosen) ────────
+            Row {
+                Text {
+                    text: "Focal length";
+                    vertical-alignment: TextVerticalAlignment.center;
+                    font-size: 13px;
+                    opacity: root.model_selected ? 1.0 : 0.35;
+                }
+                ComboBox {
+                    width: 200px; height: 28px;
+                    enabled: root.model_selected;
+                    property <bool> interacted: false;
+                    model: self.interacted ? root.focal-list : ["Select..."];
+                    selected(val) => { root.focal-changed(val); }
+                    changed has-focus => { if (self.has-focus) { self.interacted = true; } }
+                }
+                Text {
+                    text: "or";
+                    vertical-alignment: TextVerticalAlignment.center;
+                    font-size: 13px;
+                    opacity: root.model_selected ? 1.0 : 0.35;
+                }
+                HorizontalLayout {
+                    spacing: 4px;
+                    LineEdit {
+                        width: 100px; height: 28px;
+                        enabled: root.model_selected;
+                        input-type: number;
+                        text <=> root.add_focal_input;
+                        placeholder-text: "e.g. 85";
+                    }
+                    Text {
+                        text: "mm";
+                        vertical-alignment: TextVerticalAlignment.center;
+                        font-size: 13px;
+                        opacity: root.model_selected ? 1.0 : 0.35;
+                    }
+                }
+                Button {
+                    text: "+"; width: 28px; height: 28px;
+                    enabled: root.model_selected && root.add_focal_input != "";
+                    clicked => { root.add-focal-clicked(); }
+                }
+            }
+
+            // ── Max Aperture row (enabled only after focal length is chosen) ──
+            Row {
+                Text {
+                    text: "Max Aperture";
+                    vertical-alignment: TextVerticalAlignment.center;
+                    font-size: 13px;
+                    opacity: root.focal_selected ? 1.0 : 0.35;
+                }
+                ComboBox {
+                    width: 200px; height: 28px;
+                    enabled: root.focal_selected;
+                    property <bool> interacted: false;
+                    model: self.interacted ? root.max-aperture-list : ["Select..."];
+                    selected(val) => { root.max-aperture-changed(val); }
+                    changed has-focus => { if (self.has-focus) { self.interacted = true; } }
+                }
+                Text {
+                    text: "or";
+                    vertical-alignment: TextVerticalAlignment.center;
+                    font-size: 13px;
+                    opacity: root.focal_selected ? 1.0 : 0.35;
+                }
+                HorizontalLayout {
+                    spacing: 4px;
+                    Text {
+                        text: "f/";
+                        vertical-alignment: TextVerticalAlignment.center;
+                        font-size: 13px;
+                        opacity: root.focal_selected ? 1.0 : 0.35;
+                    }
+                    LineEdit {
+                        width: 120px; height: 28px;
+                        enabled: root.focal_selected;
+                        text <=> root.add_max_aperture_input;
+                        placeholder-text: "e.g. 1.4";
+                    }
+                }
+                Button {
+                    text: "+"; width: 28px; height: 28px;
+                    enabled: root.focal_selected && root.add_max_aperture_input != "";
+                    clicked => { root.add-max-aperture-clicked(); }
+                }
+            }
+
+            // ── Min Aperture row (enabled only after max aperture is chosen) ──
+            Row {
+                Text {
+                    text: "Min Aperture";
+                    vertical-alignment: TextVerticalAlignment.center;
+                    font-size: 13px;
+                    opacity: root.max_aperture_selected ? 1.0 : 0.35;
+                }
+                ComboBox {
+                    width: 200px; height: 28px;
+                    enabled: root.max_aperture_selected;
+                    property <bool> interacted: false;
+                    model: self.interacted ? root.min-aperture-list : ["Select..."];
+                    selected(val) => { root.min-aperture-changed(val); }
+                    changed has-focus => { if (self.has-focus) { self.interacted = true; } }
+                }
+                Text {
+                    text: "or";
+                    vertical-alignment: TextVerticalAlignment.center;
+                    font-size: 13px;
+                    opacity: root.max_aperture_selected ? 1.0 : 0.35;
+                }
+                HorizontalLayout {
+                    spacing: 4px;
+                    Text {
+                        text: "f/";
+                        vertical-alignment: TextVerticalAlignment.center;
+                        font-size: 13px;
+                        opacity: root.max_aperture_selected ? 1.0 : 0.35;
+                    }
+                    LineEdit {
+                        width: 120px; height: 28px;
+                        enabled: root.max_aperture_selected;
+                        text <=> root.add_min_aperture_input;
+                        placeholder-text: "e.g. 22";
+                    }
+                }
+                Button {
+                    text: "+"; width: 28px; height: 28px;
+                    enabled: root.max_aperture_selected && root.add_min_aperture_input != "";
+                    clicked => { root.add-min-aperture-clicked(); }
+                }
+            }
+        }
+
+        HorizontalLayout {
+            spacing: 10px; alignment: end;
+            Button { text: "Cancel"; width: 90px; height: 28px; clicked => { root.cancel-clicked(); } }
+            Button {
+                text: "Save";
+                width: 90px; height: 28px;
+                enabled: root.brand_selected && root.model_selected && root.focal_selected && root.max_aperture_selected && root.min_aperture_selected;
+                clicked => { root.save-clicked(); }
+            }
+        }
+    }
+}

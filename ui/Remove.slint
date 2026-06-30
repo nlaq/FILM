@@ -1,0 +1,127 @@
+import { Button, ComboBox } from "std-widgets.slint";
+
+export component RemoveWindow inherits Window {
+    in property <[string]> lens-list;
+    in property <[string]> brand-list;
+    in property <[string]> model-list;
+    in property <[string]> focal-list;
+    in property <[string]> aperture-list;
+ 
+    callback lens-changed(string);
+    callback brand-changed(string);
+    callback model-changed(string);
+    callback focal-changed(string);
+    callback aperture-changed(string); 
+    callback close-clicked();
+    
+    in property <bool> remove_lens_selected: false;
+    in property <bool> remove_brand_selected: false;
+    in property <bool> remove_model_selected: false;
+    in property <bool> remove_focal_selected: false;
+    in property <bool> remove_aperture_selected: false;
+    
+    callback remove-lens-clicked();
+    callback remove-brand-clicked();
+    callback remove-model-clicked();
+    callback remove-focal-clicked();
+    callback remove-aperture-clicked();
+
+    title: "Remove Lens";
+    width: 420px;
+    height: 330px;
+    always-on-top: true;
+
+    VerticalLayout {
+        padding: 20px;
+        spacing: 15px;
+
+        Text { 
+            wrap: word-wrap;
+            text: "Select a lens, brand, model, focal length, or minimum aperture."; 
+            vertical-alignment: TextVerticalAlignment.center; 
+            font-size: 13px;
+        }
+        Text { 
+            wrap: word-wrap;
+            text: "After clicking the - button to remove it from the database."; 
+            vertical-alignment: TextVerticalAlignment.center; 
+            font-size: 13px;
+        }
+                
+        GridLayout {
+            spacing: 10px;
+            
+            Row {
+                Text { text: "Lens"; vertical-alignment: TextVerticalAlignment.center; font-size: 13px; }
+                ComboBox {
+                    width: 200px;
+                    height: 28px;
+                    property <bool> interacted: false;
+                    model: self.interacted ? root.lens-list : ["Select..."];
+                    selected(val) => { root.lens-changed(val); }
+                    changed has-focus => { if (self.has-focus) { self.interacted = true; } }
+                }
+                Button { text: "-"; enabled: root.remove_lens_selected; width: 28px; height: 28px; clicked => { root.remove-lens-clicked() } }
+            } 
+            
+            Row {
+                Text { text: "Brand"; vertical-alignment: TextVerticalAlignment.center; font-size: 13px; }
+                ComboBox {
+                    width: 200px;
+                    height: 28px;
+                    property <bool> interacted: false;
+                    model: self.interacted ? root.brand-list : ["Select..."];
+                    selected(val) => { root.brand-changed(val); }
+                    changed has-focus => { if (self.has-focus) { self.interacted = true; } }
+                }
+                Button { text: "-"; enabled: root.remove_brand_selected; width: 28px; height: 28px; clicked => { root.remove-brand-clicked() } }
+            }
+            
+            Row {
+                Text { text: "Model"; vertical-alignment: TextVerticalAlignment.center; font-size: 13px; }
+                ComboBox {
+                    width: 200px;
+                    height: 28px;
+                    // ENABLED ONLY IF BRAND IS SELECTED
+                    enabled: root.remove_brand_selected; 
+                    property <bool> interacted: false;
+                    // Uses the filtered model-list directly
+                    model: self.interacted ? root.model-list : ["Select..."];
+                    selected(val) => { root.model-changed(val); }
+                    changed has-focus => { if (self.has-focus) { self.interacted = true; } }
+                }
+                Button { text: "-"; enabled: root.remove_model_selected; width: 28px; height: 28px; clicked => { root.remove-model-clicked() } }
+            }
+            Row {
+                Text { text: "Focal length"; vertical-alignment: TextVerticalAlignment.center; font-size: 13px; }
+                ComboBox {
+                    width: 200px;
+                    height: 28px;
+                    property <bool> interacted: false;
+                    model: self.interacted ? root.focal-list : ["Select..."];
+                    selected(val) => { root.focal-changed(val); }
+                    changed has-focus => { if (self.has-focus) { self.interacted = true; } }
+                }
+                Button { text: "-"; enabled: root.remove_focal_selected; width: 28px; height: 28px; clicked => { root.remove-focal-clicked() } }
+            }
+
+            Row {
+                Text { text: "Max. Aperture"; vertical-alignment: TextVerticalAlignment.center; font-size: 13px; }
+                ComboBox {
+                    width: 200px;
+                    height: 28px;
+                    property <bool> interacted: false;
+                    model: self.interacted ? root.aperture-list : ["Select..."];
+                    selected(val) => { root.aperture-changed(val); }
+                    changed has-focus => { if (self.has-focus) { self.interacted = true; } }
+                }
+                Button { text: "-"; enabled: root.remove_aperture_selected; width: 28px; height: 28px; clicked => { root.remove-aperture-clicked() } }
+            }
+        }
+       
+        HorizontalLayout {
+            spacing: 10px; alignment: end;
+            Button { text: "Close"; width: 90px; height: 28px; clicked => { root.close-clicked() } }
+        }
+    }
+}
