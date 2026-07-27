@@ -7,18 +7,18 @@ It works on Linux and Mac Os. If you dowload a release [https://github.com/nlaq/
 
 **On Mac OS**
 
-You may probably nedd to give permissions settings, privacy and security. After that you can copy the app file to your applications folder.
+The release is for apple silicon, you may probably need to give permissions: settings, privacy and security. After that you can copy the app file to your applications folder.
 
 **On Linux**
 
-Copy the .desktop file to ~/.local/share/applications/ or /usr/share/applications/ and the release binary to ~/.local/bin or /usr/bin 
+Only AArch64. AppImage file, download, give permission to execute and double click.
 
 **Build**
 
-To compile the app, just use cargo build.
-
-Thanks to DNGLab, an Exiftool.
+For other platforms (x86, etc) compile the app. Install cargo, go to the code folder on terminal: cargo build --release.
 
 **Use**
 
 To add/remove lenses and config dng convertion, check the edit menu.
+
+Thanks to DNGLab, an Exiftool.
