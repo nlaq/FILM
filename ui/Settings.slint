@@ -1,0 +1,157 @@
+import { Button, ComboBox, CheckBox, LineEdit } from "std-widgets.slint";
+
+export global DngSettings { 
+    in-out property <string> artist:             ""; 
+    in-out property <string> compression:       ""; 
+    in-out property <string> crop:              ""; 
+    in-out property <bool>   dng_preview:       false; 
+    in-out property <bool>   dng_thumbnail:     false; 
+    in-out property <bool>   embed_raw:         false; 
+    in-out property <bool>   override_files:    false; 
+    in-out property <string> image_index:       ""; 
+    in-out property <int>    ljpeg92_predictor: 0; 
+} 
+
+export component SettingsWindow { 
+    in-out property <bool> is-visible: false; 
+     
+    //visible: root.is-visible; 
+    callback save-clicked(); 
+    callback cancel-clicked(); 
+     
+                Rectangle {
+                    
+                    root-touch := TouchArea {
+                        
+                    width: 100%;
+                    height: 100%;
+                    enabled: root.is-visible; // Desactiva clics del overlay si está oculto
+        
+                    // 1. CAPA OSCURA CON EFECTO FADE-IN
+                    Rectangle {
+                        // Alterna entre transparente y negro translúcido según 'is-visible'
+                        background: root.is-visible ? #00000020 : #00000000;
+                        
+                        // Anima la propiedad background con una transición suave de 250ms
+                        animate background { duration: 250ms; easing: ease-in-out; }
+                    }
+        
+                    // Evita que los clics atraviesen el panel hacia atrás
+                    clicked => { /* Bloqueo intencional */ }
+                    
+                    // 2. RECUADRO BLANCO CON ANIMACIÓN DE ARRIBA HACIA ABAJO
+                    Rectangle {
+                        background: #ffffff;
+                        border-color: rgba(0, 0, 0, 0.30);
+                        border-width: 1px;
+                        border-bottom-left-radius: 10px;
+                        border-bottom-right-radius: 10px;
+                        
+                        drop-shadow-blur: 15px;
+                        drop-shadow-color: rgba(128, 128, 128, 0.5);
+                        drop-shadow-offset-x: 0px;
+                        drop-shadow-offset-y: 5px;
+        
+                        width: 470px;
+                        height: 385px;
+                        
+                        // Centrado horizontal matemático
+                        x: (parent.width - self.width) / 2;
+        
+                        // POSICIÓN DINÁMICA: Si es visible baja a 40px, si está oculto se esconde arriba a -450px
+                        y: root.is-visible ? 0px : -330px; 
+        
+                        // Alterna la opacidad para que también haga un ligero fade junto al movimiento
+                        opacity: root.is-visible ? 1.0 : 0.0;
+        
+                        // ANIMACIÓN SIMULTÁNEA: Mueve y desvanece el recuadro blanco al mismo tiempo
+                        animate y, opacity { 
+                            duration: 300ms; 
+                            easing: ease-out; // 'ease-out' hace que desacelere suavemente al llegar a los 40px
+                        }
+        
+        
+                // Actual content inside the white card
+                VerticalLayout { 
+                    padding: 24px; 
+                    spacing: 14px;
+                    alignment: start;
+                    
+                    //TITLE
+                    
+                    Text {
+                    text: "DNG convert settings";
+                    wrap: word-wrap;
+                    font-size: 14px;
+                    font-weight: FontWeight.bold;
+                } 
+        
+                    // Artist 
+                    HorizontalLayout { 
+                        spacing: 12px; 
+                        alignment: start; 
+                        Text { text: "Artist tag"; vertical-alignment: center; font-size: 13px; width: 160px; color: #000000; } 
+                        LineEdit { width: 220px; height: 28px; text <=> DngSettings.artist; placeholder-text: "e.g. John Doe"; } 
+                    } 
+        
+                    // Compression 
+                    HorizontalLayout { 
+                        spacing: 12px; 
+                        alignment: start; 
+                        Text { text: "Compression"; vertical-alignment: center; font-size: 13px; width: 160px; color: #000000; } 
+                        ComboBox { width: 160px; height: 28px; model: ["lossless", "uncompressed"]; current-value <=> DngSettings.compression; } 
+                    } 
+        
+                    // Crop 
+                    HorizontalLayout { 
+                        spacing: 12px; 
+                        alignment: start; 
+                        Text { text: "Default crop"; vertical-alignment: center; font-size: 13px; width: 160px; color: #000000; } 
+                        ComboBox { width: 160px; height: 28px; model: ["best", "activearea", "none"]; current-value <=> DngSettings.crop; } 
+                    } 
+        
+                    // LJPEG-92 predictor 
+                    HorizontalLayout { 
+                        spacing: 12px; 
+                        alignment: start; 
+                        Text { text: "LJPEG-92 predictor"; vertical-alignment: center; font-size: 13px; width: 160px; color: #000000; } 
+                        ComboBox { width: 80px; height: 28px; model: ["1", "2", "3", "4", "5", "6", "7"]; current-index <=> DngSettings.ljpeg92_predictor; } 
+                        Text { text: "If not sure, leave it on 1 (default)"; vertical-alignment: center; font-size: 11px; color: #888888; } 
+                    } 
+        
+                    // Image index 
+                    HorizontalLayout { 
+                        spacing: 12px; 
+                        alignment: start; 
+                        Text { text: "Image index"; vertical-alignment: center; font-size: 13px; width: 160px; color: #000000; } 
+                        LineEdit { width: 80px; height: 28px; text <=> DngSettings.image_index; placeholder-text: "0"; } 
+                        Text { text: "(number or \"all\")"; vertical-alignment: center; font-size: 11px; color: #888888; } 
+                    } 
+        
+                    Text { text: "Image index is only for multi-frame containers. If not sure, leave it on default"; font-size: 11px; color: #888888; } 
+        
+                    // Boolean flags 
+                    GridLayout { 
+                        spacing: 10px; 
+                        Row { 
+                            CheckBox { text: "Include preview image"; checked <=> DngSettings.dng_preview; width: 200px; } 
+                            CheckBox { text: "Include thumbnail image"; checked <=> DngSettings.dng_thumbnail; width: 200px; } 
+                        } 
+                        Row { 
+                            CheckBox { text: "Embed original RAW"; checked <=> DngSettings.embed_raw; width: 200px; } 
+                            CheckBox { text: "Override existing files"; checked <=> DngSettings.override_files; width: 200px; } 
+                        } 
+                    } 
+        
+                    // Buttons 
+                    HorizontalLayout { 
+                        spacing: 10px; 
+                        alignment: end; 
+                        Button { text: "Cancel"; width: 90px; height: 28px; clicked => { root.cancel-clicked(); } } 
+                        Button { text: "Save"; width: 90px; height: 28px; clicked => { root.save-clicked(); } } 
+                    } 
+                } 
+            } 
+        }
+    }
+}

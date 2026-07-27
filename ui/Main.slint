@@ -1,0 +1,704 @@
+
+import { Button, ComboBox, ListView, ScrollView, CheckBox } from "std-widgets.slint";
+import { CustomRadioButton } from "./Components.slint";
+import { NewLensWindow } from "./NewLens.slint";
+import { RemoveWindow } from "./Remove.slint";
+import { SettingsWindow, DngSettings } from "./Settings.slint";
+
+
+export global AppData {
+    in-out property <[string]> lens-list: [];
+    in-out property <[string]> aperture-list: [];
+    in-out property <[string]> brand-list: []; 
+    in-out property <[string]> model-list: [];
+    in-out property <[string]> focal-list: [];
+    in-out property <[string]> max-aperture-list: [];
+    in-out property <[string]> min-aperture-list: [];
+
+    in property <image> preview-image;
+    in property <string> image-info-text: "Seleccione una imagen";
+
+    in-out property <bool> file_selected_write_button_enabled: false;
+    in-out property <bool> lens_selected_write_button_enabled: false;
+    in-out property <bool> aperture_selected_write_button_enabled: false;
+    
+    /////EXIF DATA
+    in-out property <string> meta_camera: "";
+    in-out property <string> meta_lens: "";
+    in-out property <string> meta_aperture: "";
+    in-out property <string> meta_iso: "";
+    in-out property <string> meta_size: "";
+}
+
+export struct ImageItem {
+    path: string,
+    preview: image,
+}
+
+export struct Thumbnail {
+    path_thumbnail: string,
+    path_raw: string,
+    preview: image,
+    is_portrait: bool,
+    is_selected: bool
+}
+
+
+
+////////////////////////////////////////////////////////
+////////////////////////////APP MAIN WINDOW
+////////////////////////////////////////////////////////
+
+
+
+//export { SettingsWindow }
+export { DngSettings }
+
+export component AppWindow inherits Window {
+
+    title: "Film";
+    min-width: 1115px;
+    min-height: 690px;
+    background: #fff;
+
+    in-out property <[Thumbnail]> file_list;
+    in-out property <[ImageItem]> image_list: [];
+    in-out property <image> selected_preview;
+    in-out property <string> persistent_output_folder: "";
+    in-out property <string> selected_output_folder: "pick";
+    in-out property <bool> convert_all: false;
+    in-out property <string> picked_folder_label: "";
+    in-out property <bool> is_converting: false;
+    in-out property <bool> toast_visible: false;
+    in-out property <string> toast_text: "";
+    
+    in-out property <int> current_focused_index: -1;
+    
+    in-out property <bool> is_shift_pressed: false;
+    in-out property <bool> is_ctrl_pressed: false;
+    
+
+    
+    
+    
+    // Convert button is enabled:
+
+    pure function convert_enabled() -> bool {
+        if (root.convert_all) {
+            return root.file_list.length > 0;
+        } else {
+            return AppData.file-selected-write-button-enabled;
+        }
+    }
+
+    pure function convert_button_enabled() -> bool {
+        if (root.is_converting) {
+            return false; 
+        }
+        if (root.convert_all) {
+            return root.file_list.length > 0;
+        } else {
+            return AppData.file-selected-write-button-enabled;
+        }
+    }
+    
+    //////Prevent multiple overlay
+    
+    pure function any_overlay_visible() -> bool {
+        return root.settings-box-visible 
+            || root.remove-box-visible 
+            || root.new-lens-box-visible;
+    }
+    
+    ////// Processing and finished toast
+        
+    if root.toast_visible: Rectangle {
+        x: (parent.width - self.width + 220px) / 2;
+        y: (parent.height - self.height -60px) / 2;
+        z: 100;
+        width: toast-label.preferred-width + 24px;
+        height: 32px;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.8);
+        opacity: root.toast_visible ? 1.0 : 0.0;
+    
+        animate opacity {
+            duration: 700ms;
+            easing: ease-in-out;
+        }
+    
+        toast-label := Text {
+            text: root.toast_text;
+            color: #383838;
+            font-size: 12px;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+        }
+    }
+    
+
+    // MAIN WINDOW CALL BACKS
+    callback select-directory-clicked();
+    callback file-selected(int, string);
+    callback lens-changed(int);
+    callback aperture-changed(string);
+    callback write-exif-clicked();
+    callback convert-clicked();
+    
+    callback thumbnail_clicked(string);
+    callback thumbnail-ctrl-clicked(int);
+    
+
+    callback remove-lens-clicked();
+    callback new-aperture-clicked();
+    callback settings-clicked();
+    callback open-new-lens-clicked();
+    callback open_remove_window_clicked();
+    
+    callback refresh-lists();
+
+    
+    /////REMOVE WINDOW
+    
+    in-out property <bool> remove-box-visible <=> rm-box.is-visible;
+     
+    in-out property <bool> remove_lens_selected <=> rm-box.remove_lens_selected;
+    in-out property <bool> remove_brand_selected <=> rm-box.remove_brand_selected;
+    in-out property <bool> remove_model_selected <=> rm-box.remove_model_selected;
+    in-out property <bool> remove_focal_selected <=> rm-box.remove_focal_selected;
+    in-out property <bool> remove_aperture_selected <=> rm-box.remove_aperture_selected;
+
+    callback remove-box-lens-changed <=> rm-box.lens-changed;
+    callback remove-box-brand-changed <=> rm-box.brand-changed;
+    callback remove-box-model-changed <=> rm-box.model-changed;
+    callback remove-box-focal-changed <=> rm-box.focal-changed;
+    callback remove-box-aperture-changed <=> rm-box.aperture-changed;
+    
+    callback close-clicked <=> rm-box.close-clicked;
+    
+    callback remove-box-lens-clicked <=> rm-box.remove-lens-clicked;
+    callback remove-box-brand-clicked <=> rm-box.remove-brand-clicked;
+    callback remove-box-model-clicked <=> rm-box.remove-model-clicked;
+    callback remove-box-focal-clicked <=> rm-box.remove-focal-clicked;
+    callback remove-box-aperture-clicked <=> rm-box.remove-aperture-clicked;
+    
+    ////////
+    
+    /////NEW LENS WINDOW
+    
+
+    in-out property <bool> new-lens-box-visible <=> new-lens-box.is-visible;
+
+
+    // Cascade flags
+    in-out property <bool> new_lens_brand_selected <=> new-lens-box.new_lens_brand_selected;
+    in-out property <bool> new_lens_model_selected <=> new-lens-box.new_lens_model_selected;
+    in-out property <bool> new_lens_focal_selected <=> new-lens-box.new_lens_focal_selected;
+    in-out property <bool> new_lens_max_aperture_selected <=> new-lens-box.new_lens_max_aperture_selected;
+    in-out property <bool> new_lens_min_aperture_selected <=> new-lens-box.new_lens_min_aperture_selected;
+    
+    // Input fields
+    in-out property <string> new_lens_add_brand_input <=> new-lens-box.new_lens_add_brand_input;
+    in-out property <string> new_lens_add_model_input <=> new-lens-box.new_lens_add_model_input;
+    in-out property <string> new_lens_add_focal_input <=> new-lens-box.new_lens_add_focal_input;
+    in-out property <string> new_lens_add_max_aperture_input <=> new-lens-box.new_lens_add_max_aperture_input;
+    in-out property <string> new_lens_add_min_aperture_input <=> new-lens-box.new_lens_add_min_aperture_input;
+    
+    // Selection callbacks
+    callback new-lens-brand-changed <=> new-lens-box.new-lens-brand-changed;
+    callback new-lens-model-changed <=> new-lens-box.new-lens-model-changed;
+    callback new-lens-focal-changed <=> new-lens-box.new-lens-focal-changed;
+    callback new-lens-max-aperture-changed <=> new-lens-box.new-lens-max-aperture-changed;
+    callback new-lens-min-aperture-changed <=> new-lens-box.new-lens-min-aperture-changed;
+    
+    // Add callbacks
+    callback new-lens-add-brand-clicked <=> new-lens-box.new-lens-add-brand-clicked;
+    callback new-lens-add-model-clicked <=> new-lens-box.new-lens-add-model-clicked;
+    callback new-lens-add-focal-clicked <=> new-lens-box.new-lens-add-focal-clicked;
+    callback new-lens-add-max-aperture-clicked <=> new-lens-box.new-lens-add-max-aperture-clicked;
+    callback new-lens-add-min-aperture-clicked <=> new-lens-box.new-lens-add-min-aperture-clicked;
+    
+    // Bottom buttons
+    callback new-lens-save-clicked <=> new-lens-box.new-lens-save-clicked;
+    callback new-lens-cancel-clicked <=> new-lens-box.new-lens-cancel-clicked;
+    
+    //////////SETTINGS
+    in-out property <bool> settings-box-visible: false;
+    callback settings-save-clicked();
+    callback settings-cancel-clicked();
+    
+    
+        
+    
+    MenuBar {
+        Menu {
+            title: @tr("File");
+            MenuItem {
+                title: @tr("Write Exif");
+                activated => { root.write-exif-clicked(); }
+            }
+            MenuItem {
+                title: @tr("Convert to DNG");
+                activated => { root.convert-clicked(); }
+            }
+        }
+        Menu {
+                title: "Edit";
+                MenuItem {
+                    title: @tr("New Lens");
+                    enabled: !root.any_overlay_visible(); // Disables this item
+                    activated => { root.open-new-lens-clicked(); }
+                }
+                MenuItem {
+                    title: @tr("Remove lens");
+                    enabled: !root.any_overlay_visible(); // Disables this item
+                    activated => { root.open_remove_window_clicked(); }
+                }
+                MenuItem {
+                    title: @tr("DNG Settings");
+                    enabled: !root.any_overlay_visible(); // Disables this item
+                    activated => { root.settings-clicked(); }
+                }
+        }
+        Menu {
+            title: @tr("Help"); 
+            
+            MenuItem {
+                title: @tr("About Film");
+                //activated => { /* Custom rust action */ }
+            }
+        }
+    }
+
+    VerticalLayout {
+        padding-left: 20px;
+        padding-right: 20px;
+        padding-bottom: 20px;
+        padding-top: 10px;
+
+        HorizontalLayout {
+
+            Rectangle   {
+                
+                background: rgba(255, 255, 255, 0.85); 
+                border-width: 1px;
+                border-color: rgba(255, 255, 255, 0.9);
+                border-radius: 10px;
+                drop-shadow-offset-x: 0px;
+                drop-shadow-offset-y: 0px;
+                drop-shadow-blur: 15px;
+                drop-shadow-color: rgba(0, 0, 0, 0.20);           
+             
+            // --- Left column: directory, thumbnails, convert controls ---
+            VerticalLayout {
+                spacing: 10px;
+                padding: 15px;                  
+                
+                Button {
+                    text: "Directory";
+                    width: 120px;
+                    height: 32px;
+                    clicked => { root.select-directory-clicked(); }
+                }
+
+                Rectangle {
+                    width: 130px;
+                    vertical-stretch: 1;
+                    border-radius: 4px;
+                    border-width: 0px;
+                    border-color: #fff;
+            
+                    // El FocusScope maneja de forma exclusiva la navegación por teclado
+                    keyboard-interceptor := FocusScope {
+                        width: 100%;
+                        height: 100%;
+            
+                        key-pressed(event) => {
+                            if (event.text == Key.DownArrow || event.text == Key.RightArrow) {
+                                if (root.file-list.length > 0 && root.current-focused-index < root.file-list.length - 1) {
+                                    root.current-focused-index += 1;
+                                    
+                                    // Mandamos la acción resolviendo los modificadores nativos del teclado en línea
+                                    root.file-selected(
+                                        root.current-focused-index, 
+                                        event.modifiers.control ? "arrow-ctrl" : (event.modifiers.shift ? "arrow-shift" : "arrow")
+                                    );
+                                }
+                                return accept;
+                            }
+                            if (event.text == Key.UpArrow || event.text == Key.LeftArrow) {
+                                if (root.file-list.length > 0 && root.current-focused-index > 0) {
+                                    root.current-focused-index -= 1;
+                                    
+                                    root.file-selected(
+                                        root.current-focused-index, 
+                                        event.modifiers.control ? "arrow-ctrl" : (event.modifiers.shift ? "arrow-shift" : "arrow")
+                                    );
+                                }
+                                return accept;
+                            }
+                            return reject;
+                        }
+            
+                        ScrollView {
+                            vertical-stretch: 1;
+                            width: 140px;
+            
+                            VerticalLayout {
+                                spacing: 1px; 
+                                padding: 1px;
+            
+                                for thumb[index] in root.file-list: Rectangle {
+                                    background: transparent;
+                                    height: thumb.is-portrait ? 180px : 90px; 
+                                    width: 120px;
+            
+                                    TouchArea {
+                                        width: 100%;
+                                        height: 100%;
+            
+                                        // pointer-event en 'down' lee los modificadores directo del hardware del mouse
+                                        pointer-event(event) => {
+        
+                                            if (event.kind == PointerEventKind.down) {
+                                                root.current-focused-index = index;
+                                                
+                                                // Forzamos el foco para que las flechas respondan inmediatamente después del click
+                                                keyboard-interceptor.focus();
+            
+                                                if (event.modifiers.control) {
+                                                    root.thumbnail-ctrl-clicked(index);
+                                                } else if (event.modifiers.shift) {
+                                                    root.file-selected(index, "shift-click");
+                                                } else {
+                                                    root.file-selected(index, "click");
+                                                }
+                                            }
+                                          }  
+
+                                        Rectangle {
+                                            width: 100%;
+                                            height: 100%;
+                                            background: thumb.is-selected ? #cce0ff80 : transparent;
+                                            border-width: thumb.is-selected ? 2px : 0px;
+                                            border-color: #4a90d9;
+                                            border-radius: 3px;
+            
+                                            Image {
+                                                width: parent.width - 6px;
+                                                height: parent.height - 6px;
+                                                x: 3px;
+                                                y: 3px;
+                                                image-fit: contain;
+                                                source: thumb.preview;
+                                            }
+            
+                                            // Indicador visual del foco del teclado (borde gris sutil)
+                                            if (root.current-focused-index == index && !thumb.is-selected) : Rectangle {
+                                                width: 100%;
+                                                height: 100%;
+                                                border-width: 1px;
+                                                border-color: #888888;
+                                                border-radius: 3px;
+                                                background: transparent;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Convert controls
+                CheckBox {
+                    text: "Convert all files";
+                    checked <=> root.convert_all;
+                }
+
+                // Radio: always triggers the folder picker dialog on Convert.
+                CustomRadioButton {
+                    text: "Pick output folder";
+                    checked: root.selected_output_folder == "pick";
+                    clicked => { root.selected_output_folder = "pick"; }
+                }
+                
+                // Radio buttons only set the mode; Convert button is the sole trigger.
+                // Radio: shows "Same as input folder" until a folder is picked,
+                // then its label becomes the last 25 chars of that path.
+                CustomRadioButton {
+                    text: root.picked_folder_label == "" ? "Same as input" : root.picked_folder_label;
+                    checked: root.selected_output_folder == "same";
+                    clicked => { root.selected_output_folder = "same"; }
+                }
+                pulse-timer := Timer {
+                    interval: 900ms;
+                    running: root.is_converting;
+                    property <bool> pulse: false;
+                    triggered => { self.pulse = !self.pulse; }
+                }
+                
+                Rectangle {
+
+                    height: 0px;
+                    width: 120px;
+                    background: transparent;
+                
+                    if root.is_converting: Rectangle {
+                        height: 3px;
+                        background: #4a90d9;
+                        opacity: pulse-timer.pulse ? 0.15 : 0.8;
+                
+                        animate opacity {
+                            duration: 300ms;
+                            easing: ease-in-out;
+                        }
+                    }
+                }
+                convert-button := Button {
+                    text: root.is_converting ? "Processing..." : "Convert to DNG";
+                    enabled: root.convert_button_enabled();
+                    max-width: 110px;
+                    height: 28px;
+                    clicked => { root.convert-clicked(); }
+                }
+                
+            } 
+        }
+            
+        
+        // --- Right column: preview + EXIF form ---
+        ///////////////////////////////////////
+        
+            VerticalLayout {
+                padding-left: 10px;
+                spacing: 8px;
+                vertical-stretch: 1;
+                horizontal-stretch: 1;
+                
+                // 1. Recuadro de la imagen 
+                Rectangle {
+                    border-radius: 10px;
+                    border-width: 0px;
+                    border-color: rgba(0, 0, 0, 0.20);
+                    background: rgba(0, 0, 0, 0.03);
+                    clip: true;
+                    vertical-stretch: 1;
+                    
+                    VerticalLayout {
+                        //padding: 10px;
+                        spacing: 10px;
+                 
+                        if AppData.image-info-text == "Select an image.": Text {
+                            text: AppData.image-info-text;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                        }
+            
+                        Image {
+                            source: AppData.preview-image;
+                            image-fit: contain;
+                            horizontal-stretch: 1;
+                        }
+                    }
+                    
+                    if AppData.meta-camera != "" : Rectangle {
+                        background: rgba(255, 255, 255, 0.8);
+                        border-radius: 10px;
+                        border-width: 0px;
+                        
+                        // Forzamos a que mida solo lo que pida el layout de adentro
+                        width: self.preferred-width;
+                        height: self.preferred-height;
+                        
+                        // Centrado horizontal exacto y posición vertical fija
+                        x: (parent.width - self.width) / 2;
+                        y: 15px;
+                    
+                        HorizontalLayout {
+                            spacing: 25px;
+                            
+                            // El padding dentro del layout estira el Rectangle de forma segura
+                            padding-left: 15px;
+                            padding-right: 15px;
+                            padding-top: 8px;
+                            padding-bottom: 8px;
+                                                        
+                            VerticalLayout {
+                                alignment: start;
+                                Text { text: "Camera:"; font-size: 11px; color: #555; }
+                                Text { text: AppData.meta-camera; font-size: 11px; color: #007AFF; }
+                            }
+                            VerticalLayout {
+                                alignment: start;
+                                Text { text: "Lens:"; font-size: 11px; color: #555; }
+                                Text { text: AppData.meta-lens; font-size: 11px; color: #007AFF; }
+                            }
+                            VerticalLayout {
+                                alignment: start;
+                                Text { text: "Aperture:"; font-size: 11px; color: #555; }
+                                Text { text: AppData.meta-aperture; font-size: 11px; color: #007AFF; }
+                            }
+                            VerticalLayout {
+                                alignment: start;
+                                Text { text: "ISO:"; font-size: 11px; color: #555; }
+                                Text { text: AppData.meta-iso; font-size: 11px; color: #007AFF; }
+                            }
+                            VerticalLayout {
+                                alignment: start;
+                                Text { text: "Resolution:"; font-size: 11px; color: #555; }
+                                Text { text: AppData.meta-size; font-size: 11px; color: #007AFF; }
+                            }
+                        }
+                    }    
+                }
+            
+                // 2. Contenedor invisible para el Formulario EXIF
+                // Ocupa el 100% del ancho del layout vertical, centrando el formulario de 650px
+                HorizontalLayout {
+                    alignment: center; 
+                    vertical-stretch: 0;
+                    
+                    Rectangle {
+                        background: rgba(255, 255, 255, 0.85); 
+                        border-width: 1px;
+                        border-color: rgba(255, 255, 255, 0.9);
+                        border-radius: 10px;
+                        drop-shadow-offset-x: 0px;
+                        drop-shadow-offset-y: 0px;
+                        drop-shadow-blur: 15px;
+                        drop-shadow-color: rgba(0, 0, 0, 0.20); 
+                        width: 650px;
+                        
+                        HorizontalLayout {
+                            spacing: 15px;
+                            alignment: center;
+                            vertical-stretch: 1;
+                            padding: 10px;
+            
+                            HorizontalLayout {
+                                spacing: 8px;
+                                Text {
+                                    text: "Lens:";
+                                    vertical-alignment: TextVerticalAlignment.center;
+                                    font-size: 13px;
+                                }
+                                ComboBox {
+                                    width: 280px;
+                                    height: 28px;
+                                
+                                    property <bool> interacted: false;
+                                
+                                    model: self.interacted ? AppData.lens-list : ["Select..."];
+                                
+                                    changed has-focus => {
+                                        if (self.has-focus) {
+                                            root.refresh-lists();
+                                        }
+                                        
+                                        if (self.has-focus && !self.interacted) {
+                                            self.interacted = true;
+                                
+                                            if (AppData.lens-list.length > 0) {
+                                                root.lens-changed(0);
+                                            }
+                                        }
+                                    }
+                                
+                                    selected(val) => {
+                                        self.interacted = true;
+                                        root.lens-changed(self.current-index);
+                                        aperture-combo.interacted = false;
+                                        AppData.aperture-selected-write-button-enabled = false;
+                                    }
+                                }
+                            }
+            
+                            HorizontalLayout {
+                                spacing: 8px;
+                                Text {
+                                    text: "Aperture: f/";
+                                    vertical-alignment: TextVerticalAlignment.center;
+                                    font-size: 13px;
+                                    color: AppData.lens-selected-write-button-enabled ? #000000 : #888888;
+                                }
+                                aperture-combo := ComboBox {
+                                    width: 100px;
+                                    height: 28px;
+                                    enabled: AppData.lens-selected-write-button-enabled;
+                                    property <bool> interacted: false;
+                                    model: self.interacted ? AppData.aperture-list : ["Select..."];
+                                    changed has-focus => {
+                                        if (self.has-focus) {
+                                            root.refresh-lists();
+                                        }
+                                        
+                                        if (self.has-focus && !self.interacted) {
+                                            self.interacted = true;
+            
+                                            if (AppData.aperture-list.length > 0) {
+                                                // RESTRUCTURADO CON TU ÍNDICE ORIGINAL CORRECTO [0]
+                                                root.aperture-changed(AppData.aperture-list[0]);
+                                            }
+                                        }
+                                    }
+                                    selected(val) => {
+                                        self.interacted = true;
+                                        root.aperture-changed(val);
+                                    }
+                                }
+                            }
+            
+                            write-button := Button {
+                                text: "Write Exif";
+                                enabled: AppData.file-selected-write-button-enabled
+                                         && AppData.lens-selected-write-button-enabled
+                                         && AppData.aperture-selected-write-button-enabled;
+                                max-width: 110px;
+                                height: 28px;
+                                clicked => { root.write-exif-clicked(); }
+                            }
+                        }
+                    }
+                }
+            }   
+        }
+    }
+    rm-box := RemoveWindow {
+        width: parent.width;
+        height: parent.height;
+        
+        lens-list: AppData.lens-list;
+        brand-list: AppData.brand-list;
+        model-list: AppData.model-list;
+        focal-list: AppData.focal-list;
+        aperture-list: AppData.aperture-list;
+        
+
+    }
+    new-lens-box := NewLensWindow {
+        width: parent.width;
+        height: parent.height;
+        
+        brand-list: AppData.brand-list;
+        model-list: AppData.model-list;
+        focal-list: AppData.focal-list;
+        max-aperture-list: AppData.max-aperture-list;
+        min-aperture-list: AppData.min-aperture-list;
+        
+    }
+    settings-box := SettingsWindow {
+        width: parent.width;
+        height: parent.height;
+    
+        is-visible: root.settings-box-visible;
+    
+        save-clicked => {
+            root.settings-save-clicked();
+        }
+    
+        cancel-clicked => {
+            root.settings-cancel-clicked();
+        }
+    }
+}

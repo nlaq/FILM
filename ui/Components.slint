@@ -1,0 +1,40 @@
+////////////////
+/////RADIO BUTTON
+////////////////
+
+export component CustomRadioButton {
+    in property <string> text;
+    in property <bool> checked;
+    callback clicked;
+
+    HorizontalLayout {
+        spacing: 4px;
+        alignment: start;
+        
+        TouchArea {
+            width: 15px;
+            height: 15px;
+            clicked => { root.clicked(); }
+            
+            Rectangle {
+                border-radius: 9px;
+                border-width: 2px;
+                border-color: root.checked ? #007acc : #888888;
+                background: #ffffff;
+                
+                if root.checked : Rectangle {
+                    width: 9px;
+                    height: 9px;
+                    border-radius: 5px;
+                    background: #007acc;
+                }
+            }
+        }
+        
+        Text {
+            text: root.text;
+            vertical-alignment: center;
+            color: #000000; // Visible color against transparent backgrounds
+        }
+    }
+}

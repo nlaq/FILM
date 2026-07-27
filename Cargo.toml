@@ -1,0 +1,27 @@
+[package]
+name = "Film"
+version = "0.1.0"
+edition = "2021"
+build = "build.rs"
+
+[dependencies]
+slint = { version = "1.17.1"} 
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+log = "0.4"
+regex = "1.10"
+zip = "2.0"
+fast_image_resize = "5.1"
+rfd = "0.14"
+image = "0.25"
+env_logger = "0.11.11"
+dirs = "5.0"
+tokio = { version = "1.5", features = ["full"] }
+tokio-util = { version = "0.7.18", features = ["rt"] }
+futures = "0.3.32"
+
+dnglab = { package = "dnglab_lib", path = "./dnglab-lib" }
+rawler = { path = "./rawler" }
+
+[build-dependencies]
+slint-build = "1.17.1"
