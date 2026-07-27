@@ -14,7 +14,7 @@ pub mod cameras;
 pub mod convert;
 pub mod extract;
 pub mod filemap;
-pub mod ftpconv;
+
 pub mod gui;
 pub mod jobs;
 pub mod lenses;
