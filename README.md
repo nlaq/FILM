@@ -18,3 +18,7 @@ Copy the .desktop file to ~/.local/share/applications/ or /usr/share/application
 To compile the app, just use cargo build.
 
 Thanks to DNGLab, an Exiftool.
+
+**Use**
+
+To add/remove lenses and config dng convertion, check the edit menu.
