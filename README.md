@@ -11,7 +11,7 @@ The release is for apple silicon, you may probably need to give permissions: set
 
 **On Linux**
 
-Only AArch64. AppImage file, download, give permission to execute and double click.
+AArch64 and x86 builds. AppImage file, download, give permission to execute and double click.
 
 **Build**
 
