@@ -15,7 +15,7 @@ AArch64 and x86 builds. AppImage file, download, give permission to execute and 
 
 **Build**
 
-For other platforms (x86, etc) compile the app. Install cargo, go to the code folder on terminal: cargo build --release.
+For other platforms compile the app. Install cargo, go to the code folder on terminal: cargo build --release.
 
 **Use**
 
